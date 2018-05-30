@@ -2,29 +2,11 @@ import os
 import numpy as np
 import tensorflow as tf
 
-
-def start_banner():
-    print('===============================')
-    print('Script File        : {0}'.format(__file__))
-    print('Numpy version      : {0}'.format(np.__version__))
-    print('Tenserflow version : {0}'.format(tf.VERSION))
-    print('===============================')
-
-
-def end_banner():
-    print('============ Done =============')
-
-
-def dump_graph(my_graph):
-    writer = tf.summary.FileWriter('.')
-    writer.add_graph(my_graph)
-    cwd = os.getcwd()
-    print('Dump default graph to dir : {0}'.format(cwd))
-    writer.close()
+import Utils as myutils
 
 
 def main():
-    start_banner()
+    myutils.start_banner()
 
     a = tf.constant(3.0, dtype=tf.float32)
     b = tf.constant(4.0, name='const_b')
@@ -46,9 +28,9 @@ def main():
         # print('a_plus_b = {0}'.format(a_plus_b.eval()))
         # print('tot_sum = {0}'.format(tot_sum.eval()))
 
-    dump_graph(tf.get_default_graph())
+    myutils.dump_graph(tf.get_default_graph())
 
-    end_banner()
+    myutils.end_banner()
 
 
 main()
