@@ -46,11 +46,6 @@ def main():
 
     [features, target, _] = load_dataset()
 
-    # dt = pd.DataFrame(data=features, columns=feature_names)
-
-    slices = tf.data.Dataset.from_tensor_slices(features)
-    next_item = tf.data.Dataset.make_one_shot_iterator(slices).get_next()
-
     x_val = [
         [1.], [2.], [3.], [4.]
     ]
