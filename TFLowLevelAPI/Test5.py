@@ -62,11 +62,12 @@ def load_dataset(verbose=False):
 
 
 def plot_learning_rate(loss_history):
-    # plt.plot(training_iterations, loss_history)
-    plt.plot(loss_history)
-    plt.xlabel('iterations/epocs')
-    plt.ylabel('loss')
-    plt.grid(True)
+    ax = plt.subplot('111')
+    ax.plot(loss_history)
+    ax.set_yscale('log')
+    ax.set_xlabel('iterations/epocs')
+    ax.set_ylabel('loss')
+    ax.grid(True)
     plt.show()
 
 
@@ -94,29 +95,39 @@ def main():
     #         x = sess.run(next_item)
     #         print('shape : {0}, data = {1}'.format(x.shape, x))
 
-    # x_val = [
-    #     [1., 1., 1.], [2., 2., 2.], [3., 3., 3.], [4., 4., 4.]
-    # ]
-    x_val = [[1., 2.], [2., 1.], [3., 0.], [4., -1.]]
-    y_val = [[1.], [-0.], [-1.], [-2.]]
+    x_val = [
+        [0, 1],
+        [1, 0],
+        [0, 0],
+        [1, 1]
+    ]
 
-    xx_val = [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]]
+    y_val = [
+        [0],
+        [0],
+        [1],
+        [-1]
+    ]
+
+    x_val = np.array(x_val, dtype=np.float32)
+    y_val = np.array(y_val, dtype=np.float32)
+
+    # xx_val = [[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]]
 
     # x_val = features[:, 1].reshape([5, 1])
     # y_val = target.reshape([5, 1])
 
     x = tf.placeholder(tf.float32, shape=[None, 2], name='x')
     y = tf.placeholder(dtype=tf.float32, shape=[None, 1], name='y')
-    lin_model = tf.layers.Dense(units=1, use_bias=False)
-    y_pred = lin_model(x)
+    linear_model = tf.layers.Dense(units=1, use_bias=True)
+    y_pred = linear_model(x)
 
     loss = tf.losses.mean_squared_error(labels=y, predictions=y_pred)
-    optimizer = tf.train.GradientDescentOptimizer(0.1)
+    optimizer = tf.train.GradientDescentOptimizer(0.3)
     train = optimizer.minimize(loss)
 
-    weights = []
     loss_history = []
-    training_iterations = range(200)
+    training_iterations = range(1000)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -125,13 +136,16 @@ def main():
             loss_history.append(loss_val)
 
         y_pred_val = sess.run(y_pred, {x: x_val})
-        weights = sess.run(lin_model.trainable_variables)
+        weights = sess.run(linear_model.trainable_variables)
 
         for i in range(4):
             print(y_val[i], y_pred_val[i])
 
+    print('trained weights')
     print(weights)
-    #plot_learning_rate(loss_history)
+    print('trained loss = {0}'.format(loss_history[-1]))
+
+    plot_learning_rate(loss_history)
 
     # my_data = [
     #     [0, 1],
