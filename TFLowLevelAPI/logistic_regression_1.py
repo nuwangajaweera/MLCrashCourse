@@ -21,7 +21,7 @@ def end_banner():
 
 def load_data():
     # load data
-    #x, y = ds.make_classification(200, n_features=2, n_classes=2, n_clusters_per_class=1, n_redundant=0)
+    # x, y = ds.make_classification(200, n_features=2, n_classes=2, n_clusters_per_class=1, n_redundant=0)
     x, y = ds.make_classification(200, n_features=2, n_classes=2, n_redundant=0)
     data = np.column_stack((x,y))
     training_set = pd.DataFrame(data, columns=['x1', 'x2', 'label'])
@@ -71,6 +71,29 @@ def plot_model(ax, a, c, x, y):
     ax.scatter(x1, x2, c=y)
     ax.plot(x1_lims, x2_lims)
 
+
+def plot_circle():
+    xx, yy = np.meshgrid(np.arange(-5.0, 5.0, 0.2), np.arange(-5.0, 5.0, 0.2))
+    #xx.shape, yy.shape
+
+    z1 = np.c_[xx.ravel(), yy.ravel()]
+    #z1.shape
+
+    def func1(z):
+        x = z[:, 0]
+        y = z[:, 1]
+        z = x**2 + y**2 - 2
+        z = np.where(z == 0.0, 0, 1)
+        return z
+
+    Z = func1(z1)
+    Z = Z.reshape(xx.shape)
+    #Z.shape
+
+    plt.contour(xx, yy, Z, cmap=plt.cm.jet, alpha=.8)
+    plt.show()
+
+
 def main():
     start_banner()
 
@@ -81,14 +104,24 @@ def main():
 
     x = tf.placeholder(tf.float32, [None, x_dims], name='x')
     y = tf.placeholder(tf.float32, [None, 1], name='y')
-    #model = tf.layers.Dense(units=1, activation=tf.nn.sigmoid)
-    #y_pred = model(x)
 
-    y_pred = a1*x1 + a2*x2
+    z1, z2 = tf.split(x, [1, 1], axis=1)
+    x_bar = x
 
+    k = 1
+    for i in range(2, 6):
+        for j in range(i + 1):
+            print("{2} : x1^{0} * x2^{1}".format(i - j, j, k))
+            k = k + 1
+            a = pow(z1, i - j) * pow(z2, j)
+            print(a.shape)
+            x_bar = tf.concat([x_bar, a], axis=1)
+
+    model = tf.layers.Dense(units=1, activation=tf.nn.sigmoid)
+    y_pred = model(x_bar)
 
     loss = tf.losses.log_loss(y, y_pred)
-    optimizrer = tf.train.GradientDescentOptimizer(0.3)
+    optimizrer = tf.train.GradientDescentOptimizer(0.1)
     train = optimizrer.minimize(loss)
 
     y_vals = np.reshape(training_set['label'].values, [len(training_set), 1])
@@ -124,6 +157,7 @@ def main():
 
     a = weights[0]
     c = weights[1]
+
     ax = plt.subplot('132')
     plot_model(ax, a, c, x_vals, y_vals)
 
@@ -135,4 +169,13 @@ def main():
     end_banner()
 
 
-main()
+#main()
+# k = 1
+# for i in range(7):
+#     for j in range(i+1):
+#         print ("{2} : x1^{0} * x2^{1}".format(i, j, k))
+#         k = k + 1
+
+plot_circle()
+
+
