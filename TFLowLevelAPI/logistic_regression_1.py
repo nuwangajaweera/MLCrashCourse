@@ -7,7 +7,14 @@ import tensorflow as tf
 import seaborn as sns
 import Utils as myutils
 
+from scipy.special import expit
+
+I = 3
+
+N_SAMPLES = 1000
 TEST_SET_PERCENTAGE = 1/3
+
+MODEL_POLY_ORDER = 3
 TRAINING_ITERATIONS = 100
 
 
@@ -22,7 +29,7 @@ def end_banner():
 def load_data():
     # load data
     # x, y = ds.make_classification(200, n_features=2, n_classes=2, n_clusters_per_class=1, n_redundant=0)
-    x, y = ds.make_classification(200, n_features=2, n_classes=2, n_redundant=0)
+    x, y = ds.make_classification(N_SAMPLES, n_features=2, n_classes=2, n_redundant=0)
     data = np.column_stack((x,y))
     training_set = pd.DataFrame(data, columns=['x1', 'x2', 'label'])
 
@@ -60,37 +67,46 @@ def plot_learning_rate(ax, loss_trend):
     ax.grid(True)
 
 
-def plot_model(ax, a, c, x, y):
+def plot_model(ax, a, c, order, x, y):
     x1 = x[:, 0]
     x2 = x[:, 1]
     y = y[:, 0]
 
-    x1_lims = np.array([np.amin(x1), np.amax(x1)])
-    x2_lims = (x1_lims * a[0] - c) / a[1]
+    x1_vals = np.arange(np.amin(x1), np.amax(x1), 0.1)
+    x2_vals = np.arange(np.amin(x1), np.amax(x1), 0.1)
 
+    xx1, xx2 = np.meshgrid(x1_vals, x2_vals)
+
+    xx1_ = xx1.flatten()
+    xx2_ = xx2.flatten()
+    xx_bar = np.c_[xx1_, xx2_]
+
+    for i in range(2, order+1):
+        for j in range(i + 1):
+            # print("x1^{0} * x2^{1}".format(i - j, j)
+            xx_temp = pow(xx1_, i - j) * pow(xx2_, j)
+            xx_bar = np.c_[xx_bar, xx_temp]
+
+    yy_ = np.matmul(xx_bar, a) + c
+    yy = expit(yy_)
+    yy = yy_.reshape(xx1.shape)
+
+    ax.contour(xx1, xx2, yy, levels=[0.5], cmap=plt.cm.Paired)
     ax.scatter(x1, x2, c=y)
-    ax.plot(x1_lims, x2_lims)
 
 
 def plot_circle():
-    xx, yy = np.meshgrid(np.arange(-5.0, 5.0, 0.2), np.arange(-5.0, 5.0, 0.2))
-    #xx.shape, yy.shape
-
-    z1 = np.c_[xx.ravel(), yy.ravel()]
-    #z1.shape
-
-    def func1(z):
-        x = z[:, 0]
-        y = z[:, 1]
-        z = x**2 + y**2 - 2
-        z = np.where(z == 0.0, 0, 1)
+    def func1(x, y):
+        z = x**2 + y**2
+        z = np.where(z > 0.5, 1, 0)
         return z
 
-    Z = func1(z1)
-    Z = Z.reshape(xx.shape)
-    #Z.shape
+    u = np.arange(-5, 5, 0.01)
+    xx, yy = np.meshgrid(u, u)
 
-    plt.contour(xx, yy, Z, cmap=plt.cm.jet, alpha=.8)
+    zz = func1(xx, yy)
+
+    plt.contour(xx, yy, zz, cmap=plt.cm.jet, alpha=.8, levels=[0])
     plt.show()
 
 
@@ -100,7 +116,6 @@ def main():
     training_set, test_set, feature_cols = load_data()
 
     x_dims = feature_cols
-    y_dims = 1
 
     x = tf.placeholder(tf.float32, [None, x_dims], name='x')
     y = tf.placeholder(tf.float32, [None, 1], name='y')
@@ -108,11 +123,9 @@ def main():
     z1, z2 = tf.split(x, [1, 1], axis=1)
     x_bar = x
 
-    k = 1
-    for i in range(2, 6):
+    for i in range(2, MODEL_POLY_ORDER + 1):
         for j in range(i + 1):
-            print("{2} : x1^{0} * x2^{1}".format(i - j, j, k))
-            k = k + 1
+            # print("x1^{0} * x2^{1}".format(i - j, j))
             a = pow(z1, i - j) * pow(z2, j)
             print(a.shape)
             x_bar = tf.concat([x_bar, a], axis=1)
@@ -121,7 +134,8 @@ def main():
     y_pred = model(x_bar)
 
     loss = tf.losses.log_loss(y, y_pred)
-    optimizrer = tf.train.GradientDescentOptimizer(0.1)
+    # optimizrer = tf.train.GradientDescentOptimizer(0.1)
+    optimizrer = tf.train.AdamOptimizer(0.1)
     train = optimizrer.minimize(loss)
 
     y_vals = np.reshape(training_set['label'].values, [len(training_set), 1])
@@ -159,23 +173,15 @@ def main():
     c = weights[1]
 
     ax = plt.subplot('132')
-    plot_model(ax, a, c, x_vals, y_vals)
+    plot_model(ax, a, c, MODEL_POLY_ORDER, x_vals, y_vals)
 
     ax = plt.subplot('133')
-    plot_model(ax, a, c, x_test_vals, y_test_vals)
+    plot_model(ax, a, c, MODEL_POLY_ORDER, x_test_vals, y_test_vals)
 
     plt.show()
 
     end_banner()
 
 
-#main()
-# k = 1
-# for i in range(7):
-#     for j in range(i+1):
-#         print ("{2} : x1^{0} * x2^{1}".format(i, j, k))
-#         k = k + 1
-
-plot_circle()
-
+main()
 
