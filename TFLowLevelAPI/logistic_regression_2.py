@@ -9,12 +9,12 @@ import Utils as myutils
 
 from scipy.special import expit
 
-I = 3
-
-N_SAMPLES = 1000
+GENERATE_DATA = False
+DATA_FILENAME = './data/data.csv'
+N_SAMPLES = 150
 TEST_SET_PERCENTAGE = 1/3
 
-MODEL_POLY_ORDER = 3
+MODEL_POLY_ORDER = 1
 TRAINING_ITERATIONS = 100
 
 
@@ -26,12 +26,16 @@ def end_banner():
     print('\n----------------\n')
 
 
-def load_data():
+def load_data(generate_data):
     # load data
     # x, y = ds.make_classification(200, n_features=2, n_classes=2, n_clusters_per_class=1, n_redundant=0)
-    x, y = ds.make_classification(N_SAMPLES, n_features=2, n_classes=2, n_redundant=0)
-    data = np.column_stack((x,y))
-    training_set = pd.DataFrame(data, columns=['x1', 'x2', 'label'])
+    if GENERATE_DATA:
+        x, y = ds.make_classification(N_SAMPLES, n_features=2, n_classes=2, n_redundant=0)
+        data = np.column_stack((x, y))
+        training_set = pd.DataFrame(data, columns=['x1', 'x2', 'label'])
+        training_set.to_csv(DATA_FILENAME, index=False)
+    else:
+        training_set = pd.read_csv(DATA_FILENAME)
 
     total_samples = len(training_set)
     feature_cols = len(training_set.columns) - 1
@@ -53,7 +57,11 @@ def load_data():
     # suffle training set
     training_set = training_set.reindex(np.random.permutation(training_set.index))
 
-    print('Loaded {0} samples'.format(total_samples))
+    if(generate_data):
+        print('Generated {0} samples'.format(total_samples))
+    else:
+        print('Loaded {0} samples'.format(total_samples))
+
     print('\tTraining Set size = {0} samples, Test Set Size = {1} samples'.format(len(training_set), len(test_set)))
 
     return training_set, test_set, feature_cols
@@ -95,25 +103,10 @@ def plot_model(ax, a, c, order, x, y):
     ax.scatter(x1, x2, c=y)
 
 
-def plot_circle():
-    def func1(x, y):
-        z = x**2 + y**2
-        z = np.where(z > 0.5, 1, 0)
-        return z
-
-    u = np.arange(-5, 5, 0.01)
-    xx, yy = np.meshgrid(u, u)
-
-    zz = func1(xx, yy)
-
-    plt.contour(xx, yy, zz, cmap=plt.cm.jet, alpha=.8, levels=[0])
-    plt.show()
-
-
 def main():
     start_banner()
 
-    training_set, test_set, feature_cols = load_data()
+    training_set, test_set, feature_cols = load_data(GENERATE_DATA)
 
     x_dims = feature_cols
 
@@ -127,7 +120,6 @@ def main():
         for j in range(i + 1):
             # print("x1^{0} * x2^{1}".format(i - j, j))
             a = pow(z1, i - j) * pow(z2, j)
-            print(a.shape)
             x_bar = tf.concat([x_bar, a], axis=1)
 
     model = tf.layers.Dense(units=1, activation=tf.nn.sigmoid)
